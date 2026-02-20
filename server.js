@@ -47,7 +47,7 @@ app.get('/', (req, res) => {
     });
 });
 
-// health check endpoint
+// health check endpoint---test 2
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'OK',

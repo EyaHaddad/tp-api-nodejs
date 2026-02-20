@@ -321,3 +321,26 @@ exports.advancedSearch = async (req, res) => {
         });
     }
 };
+
+// ============================================
+exports.getEtudiantsSorted = async (req, res) => {
+    try {
+        console.log('🔎 Afficher les étudiants par ordre décroissant de moyenne');
+        
+        // Afficher les étudiants triés par moyenne décroissante
+        const etudiants = await Etudiant.find().sort({ moyenne: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: etudiants.length,
+            data: etudiants
+        }); 
+        
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erreur serveur',
+            error: error. message
+        });
+    }
+};

@@ -87,3 +87,7 @@ app.listen(PORT, () => {
     ╚════════════════════════════════════════════╝
     `);
 });
+// TODO: ajouter la documentation
+// Ce commentaire est une erreur
+// Modification temporaire
+// Fonction utilitaire

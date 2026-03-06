@@ -9,6 +9,7 @@ const connectDB = async () => {
         
         // Si la connexion réussit, afficher un message
         console.log(`✅ MongoDB connecté:  ${conn.connection.host}`);
+
     } catch (error) {
         // Si la connexion échoue, afficher l'erreur et arrêter le programme
         console. error(`❌ Erreur de connexion MongoDB: ${error.message}`);

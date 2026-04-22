@@ -6,6 +6,16 @@ const Etudiant = require('../models/Etudiant');
 
 let mongoServer;
 
+const createEtudiantData = (overrides = {}) => ({
+  nom: 'Dupont',
+  prenom: 'Alice',
+  email: 'alice.dupont@example.com',
+  filiere: 'Informatique',
+  annee: 3,
+  moyenne: 15,
+  ...overrides,
+});
+
 // beforeAll s'exécute une seule fois avant tous les tests de ce fichier.
 // On démarre MongoDB en mémoire et on s'y connecte.
 beforeAll(async () => {
@@ -32,17 +42,21 @@ describe('GET /api/etudiants', () => {
   test('retourne un tableau vide si aucun étudiant', async () => {
     const res = await request(app).get('/api/etudiants');
     expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveLength(0);
+    expect(res.body.success).toBe(true);
+    expect(res.body.count).toBe(0);
+    expect(res.body.data).toHaveLength(0);
   });
 
   test('retourne tous les étudiants', async () => {
     await Etudiant.create([
-      { nom: 'Dupont', prenom: 'Alice', moyenne: 15 },
-      { nom: 'Martin', prenom: 'Bob',   moyenne: 12 },
+      createEtudiantData(),
+      createEtudiantData({ nom: 'Martin', prenom: 'Bob', email: 'bob.martin@example.com', moyenne: 12 }),
     ]);
     const res = await request(app).get('/api/etudiants');
     expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveLength(2);
+    expect(res.body.success).toBe(true);
+    expect(res.body.count).toBe(2);
+    expect(res.body.data).toHaveLength(2);
   });
 
 });
@@ -53,11 +67,12 @@ describe('POST /api/etudiants', () => {
   test('crée un étudiant et retourne 201', async () => {
     const res = await request(app)
       .post('/api/etudiants')
-      .send({ nom: 'Dupont', prenom: 'Alice', moyenne: 15 });
+      .send(createEtudiantData());
 
     expect(res.statusCode).toBe(201);
-    expect(res.body.nom).toBe('Dupont');
-    expect(res.body._id).toBeDefined();
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.nom).toBe('Dupont');
+    expect(res.body.data._id).toBeDefined();
   });
 
   test('retourne 400 si le nom est manquant', async () => {
@@ -74,10 +89,11 @@ describe('POST /api/etudiants', () => {
 describe('GET /api/etudiants/:id', () => {
 
   test('retourne l\'étudiant correspondant', async () => {
-    const etudiant = await Etudiant.create({ nom: 'Dupont', prenom: 'Alice', moyenne: 15 });
+    const etudiant = await Etudiant.create(createEtudiantData());
     const res = await request(app).get(`/api/etudiants/${etudiant._id}`);
     expect(res.statusCode).toBe(200);
-    expect(res.body.nom).toBe('Dupont');
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.nom).toBe('Dupont');
   });
 
   test('retourne 404 pour un ID inexistant', async () => {
@@ -92,14 +108,15 @@ describe('GET /api/etudiants/:id', () => {
 describe('PUT /api/etudiants/:id', () => {
 
   test('met à jour un étudiant', async () => {
-    const etudiant = await Etudiant.create({ nom: 'Dupont', prenom: 'Alice', moyenne: 12 });
+    const etudiant = await Etudiant.create(createEtudiantData({ moyenne: 12 }));
     const res = await request(app)
       .put(`/api/etudiants/${etudiant._id}`)
       .send({ moyenne: 17 });
 
     expect(res.statusCode).toBe(200);
-    expect(res.body.moyenne).toBe(17);
-    expect(res.body.nom).toBe('Dupont'); // les champs non modifiés restent intacts
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.moyenne).toBe(17);
+    expect(res.body.data.nom).toBe('Dupont'); // les champs non modifiés restent intacts
   });
 
   test('retourne 404 si l\'étudiant n\'existe pas', async () => {
@@ -116,12 +133,13 @@ describe('PUT /api/etudiants/:id', () => {
 describe('DELETE /api/etudiants/:id', () => {
 
   test('supprime l\'étudiant et retourne 200', async () => {
-    const etudiant = await Etudiant.create({ nom: 'Dupont', prenom: 'Alice', moyenne: 15 });
+    const etudiant = await Etudiant.create(createEtudiantData());
     const res = await request(app).delete(`/api/etudiants/${etudiant._id}`);
 
     expect(res.statusCode).toBe(200);
-    // On vérifie aussi directement en base que l'objet a bien disparu
-    expect(await Etudiant.findById(etudiant._id)).toBeNull();
+    expect(res.body.success).toBe(true);
+    // Le contrôleur fait une suppression logique en passant actif à false
+    expect((await Etudiant.findById(etudiant._id)).actif).toBe(false);
   });
 
   test('retourne 404 si l\'étudiant n\'existe pas', async () => {

@@ -1,3 +1,6 @@
+
+const mongoose = require('mongoose');
+
 // Importer le modèle Etudiant
 const Etudiant = require('../models/Etudiant');
 
@@ -15,6 +18,16 @@ exports.createEtudiant = async (req, res) => {
         // req.body contient les données JSON envoyées
         console.log('📥 Données reçues:', req.body);
         
+        if (!req.body.nom || !req.body.prenom) {
+            return res.status(400).json({ message: 'Le nom et le prénom sont obligatoires' });
+            }
+        if (req.body.moyenne === undefined || typeof req.body.moyenne !== 'number') {
+        return res.status(400).json({ message: 'La moyenne doit être un nombre' });
+        }
+        if (req.body.moyenne < 0 || req.body.moyenne > 20) {
+            return res.status(400).json({ message: 'La moyenne doit être comprise entre 0 et 20' });
+            }
+
         // Étape 2: Créer l'étudiant dans la base de données
         // Mongoose valide automatiquement les données selon le schéma
         
@@ -31,9 +44,11 @@ exports.createEtudiant = async (req, res) => {
             });
         }
         
-        const etudiant = await Etudiant.create(req.body);
+        const etudiant = new Etudiant(req.body);
+        await etudiant.save();
+        // Ou en une seule étape:
+        //const etudiant = await Etudiant.create(req.body);
         //.create() est une méthode de Mongoose qui crée et enregistre un document en une seule étape.
-
         
         // Étape 3: Renvoyer une réponse de succès (code 201 = Created)
         res.status(201).json({
@@ -104,6 +119,11 @@ exports.getEtudiantById = async (req, res) => {
         // req.params contient les paramètres de l'URL
         console.log('🔍 Recherche de l\'ID:', req.params.id);
         
+        // ObjectId.isValid() vérifie que l'ID respecte le format MongoDB (24 caractères hex)
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: 'ID invalide' });
+            }
+
         // Étape 2: Chercher l'étudiant par son ID
         const etudiant = await Etudiant.findById(req.params.id);
         

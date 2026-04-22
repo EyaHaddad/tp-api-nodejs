@@ -13,26 +13,25 @@ const connectDB = require('./config/database');
 // Charger les variables d'environnement depuis . env
 dotenv.config();
 
-// Connexion à la base de données MongoDB
-connectDB().then(() => {
-  app.listen(PORT, () => console.log(`Serveur démarré sur le port ${PORT}`));
-});
+const PORT = process.env.PORT || 3000;
 
 // ============================================
 // DÉMARRAGE DU SERVEUR
 // ============================================
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`
+const startMessage = `
     ╔════════════════════════════════════════════╗
     ║   🚀 Serveur démarré avec succès!          ║
     ╠════════════════════════════════════════════╣
     ║   📍 URL: http://localhost:${PORT}             ║
     ║   📚 API: http://localhost:${PORT}/api/etudiants║
     ╚════════════════════════════════════════════╝
-    `);
+    `;
+
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(startMessage);
+  });
 });
 // TODO: ajouter la documentation
 // Ce commentaire est une erreur

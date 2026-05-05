@@ -39,7 +39,7 @@ jobs:
       # 3. Copier les fichiers sur le serveur
       - name: 📦 Envoyer les fichiers au serveur
         run: |
-          /usr/bin/rsync -avz --delete \
+          rsync -avz --delete \
             --exclude '.git' \
             --exclude 'node_modules' \
             --exclude '.env' \

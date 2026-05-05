@@ -32,10 +32,13 @@ jobs:
           chmod 600 ~/.ssh/ec2_key
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
       # 2.5 Installer rsync
-      - name: 📥 Installer rsync
+      - name: 🛠 Installer rsync sur EC2
         run: |
-          sudo apt-get update
-          sudo apt-get install -y rsync
+          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'ENDSSH'
+            sudo apt update
+            sudo apt install -y rsync
+          ENDSSH
+
       # 3. Copier les fichiers sur le serveur
       - name: 📦 Installer rsync et envoyer les fichiers au serveur
         shell: bash
@@ -46,7 +49,9 @@ jobs:
           which rsync || true
           ls -l /usr/bin/rsync || true
 
-          /usr/bin/rsync -avz --delete \
+          /usr/bin/rsync -avz --delete -vv \
+            -e "ssh -i ~/.ssh/ec2_key" \
+            ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/app/ \
             --exclude '.git' \
             --exclude 'node_modules' \
             --exclude '.env' \

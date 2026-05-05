@@ -1,6 +1,5 @@
-import request from 'supertest';
-import app from '../app'; // Assurez-vous que le chemin vers votre application est correct
-
+const request = require('supertest');
+const app = require('../app');
 
 describe('GET /health', () => {
   it('devrait retourner le statut de santé', async () => {

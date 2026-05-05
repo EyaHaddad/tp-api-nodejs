@@ -37,8 +37,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rsync
       # 3. Copier les fichiers sur le serveur
-      - name: 📦 Envoyer les fichiers au serveur
+      - name: 📦 Installer rsync et envoyer les fichiers au serveur
         run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync
+
           rsync -avz --delete \
             --exclude '.git' \
             --exclude 'node_modules' \

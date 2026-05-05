@@ -48,11 +48,7 @@ jobs:
             --exclude 'terraform' \
             -e "ssh -i ~/.ssh/ec2_key" \
             ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/app/
-      - name: 🔍 Debug rsync
-        if: always()
-        run: |
-          which rsync || echo "rsync not found"
-          rsync --version || echo "cannot run rsync"
+      
       # 4. Installer les dépendances et redémarrer
       - name: 🔄 Installer et redémarrer l'application
         run: |

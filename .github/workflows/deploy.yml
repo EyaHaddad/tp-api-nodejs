@@ -49,17 +49,7 @@ jobs:
           which rsync || true
           ls -l /usr/bin/rsync || true
 
-          /usr/bin/rsync -avz --delete -vv \
-            -e "ssh -i ~/.ssh/ec2_key" \
-            ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/app/ \
-            --exclude '.git' \
-            --exclude 'node_modules' \
-            --exclude '.env' \
-            --exclude 'coverage' \
-            --exclude '__tests__' \
-            --exclude 'terraform' \
-            -e "ssh -i ~/.ssh/ec2_key" \
-            ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/app/
+          /usr/bin/rsync -avz --delete --exclude '.git' --exclude 'node_modules' --exclude '.env' --exclude 'coverage' --exclude '__tests__' --exclude 'terraform' -e "ssh -i ~/.ssh/ec2_key" ./ ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/${{ secrets.EC2_USER }}/app/
       
       # 4. Installer les dépendances et redémarrer
       - name: 🔄 Installer et redémarrer l'application

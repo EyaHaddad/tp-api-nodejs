@@ -1,0 +1,154 @@
+# ============================================
+# PLAYBOOK : Déployer l'application
+# ============================================
+# Ce playbook récupère le code depuis GitHub,
+# installe les dépendances, et lance l'application.
+#
+# Prérequis : avoir lancé playbook-setup.yml une première fois
+# Lancer : ansible-playbook playbook-deploy.yml
+# ============================================
+
+---
+- name: 🚀 Déploiement de l'API Node.js
+  hosts: webservers
+  become: no              # On déploie en tant que ec2-user (pas root)
+  gather_facts: false
+
+  vars:
+    app_dir: "/home/ec2-user/app"
+    app_port: 3000
+    node_env: "production"
+    github_repo: "https://github.com/EyaHaddad/tp-api-nodejs.git"
+    github_branch: "main"
+
+  pre_tasks:
+    - name: 🔌 Vérifier que le serveur est joignable
+      wait_for_connection:
+        timeout: 25
+        connect_timeout: 8
+        sleep: 2
+
+  tasks:
+
+    # ── 1. Récupérer le code ──
+
+    - name: 📁 S'assurer que le dossier existe
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: 🔎 Vérifier si le code est déjà cloné
+      stat:
+        path: "{{ app_dir }}/.git"
+      register: repo_git_dir
+
+    - name: 📥 Cloner le dépôt (première fois)
+      shell: |
+        timeout 120 git clone --depth 1 --branch {{ github_branch }} {{ github_repo }} {{ app_dir }}
+      environment:
+        GIT_TERMINAL_PROMPT: "0"
+      when: not repo_git_dir.stat.exists
+
+    - name: 🔄 Mettre à jour le code (fois suivantes)
+      shell: |
+        timeout 120 git fetch --depth 1 origin {{ github_branch }}
+        git checkout {{ github_branch }}
+        git reset --hard origin/{{ github_branch }}
+      args:
+        chdir: "{{ app_dir }}"
+      environment:
+        GIT_TERMINAL_PROMPT: "0"
+      when: repo_git_dir.stat.exists
+
+    - name: 🧾 Quel commit est déployé ?
+      command: git rev-parse HEAD
+      args:
+        chdir: "{{ app_dir }}"
+      register: deployed_commit
+      changed_when: false
+
+    - name: 📋 Afficher le commit
+      debug:
+        msg: "Commit déployé : {{ deployed_commit.stdout }}"
+
+    # ── 2. Configurer l'application ──
+
+    - name: ⚙️ Générer le fichier .env
+      template:
+        src: templates/env.j2
+        dest: "{{ app_dir }}/.env"
+        mode: '0600'       # Seul le propriétaire peut lire ce fichier
+
+    # ── 3. Installer les dépendances ──
+
+    - name: 📦 Installer les dépendances npm (production)
+      npm:
+        path: "{{ app_dir }}"
+        production: yes
+        state: present
+
+    # ── 4. Vérifier que le fichier PM2 existe ──
+
+    - name: 📋 Vérifier ecosystem.config.js
+      stat:
+        path: "{{ app_dir }}/ecosystem.config.js"
+      register: ecosystem_file
+
+    - name: ❌ Erreur si ecosystem.config.js manque
+      fail:
+        msg: "Le fichier ecosystem.config.js n'existe pas ! Ajoutez-le à votre dépôt Git."
+      when: not ecosystem_file.stat.exists
+
+    # ── 5. Lancer l'application ──
+
+    - name: 🚀 Démarrer/Redémarrer l'application
+      shell: |
+        timeout 60 pm2 startOrReload ecosystem.config.js --env production
+      args:
+        chdir: "{{ app_dir }}"
+      register: pm2_result
+      changed_when: true
+      failed_when: pm2_result.rc != 0
+
+    - name: 📋 Statut PM2
+      command: pm2 jlist
+      register: pm2_status
+      changed_when: false
+
+    - name: 📋 Afficher le statut
+      debug:
+        msg: "{{ pm2_status.stdout | from_json | map(attribute='name') | list }} — en cours d'exécution"
+      ignore_errors: yes
+
+    - name: 💾 Sauvegarder la config PM2 (survit au redémarrage)
+      command: pm2 save
+      changed_when: false
+
+    # ── 6. Vérifier que l'API marche ──
+
+    - name: ⏳ Attendre 3 secondes que l'app démarre
+      pause:
+        seconds: 3
+
+    - name: 🏥 Vérifier que l'API répond
+      uri:
+        url: "http://localhost:{{ app_port }}/"
+        method: GET
+        status_code: [200, 301, 302, 404]
+        timeout: 10
+      register: health_check
+      retries: 5
+      delay: 3
+      until: health_check.status != -1
+
+    - name: ✅ Déploiement réussi !
+      debug:
+        msg: |
+          ════════════════════════════════════════
+           ✅ DÉPLOIEMENT RÉUSSI !
+          ════════════════════════════════════════
+           🌐 URL : http://{{ ansible_host }}:{{ app_port }}
+           📦 Commit : {{ deployed_commit.stdout[:8] }}
+           📅 Date : {{ lookup('pipe', 'date -Iseconds') }}
+          ════════════════════════════════════════

@@ -25,13 +25,15 @@ app.get('/', (req, res) => {
     });
 });
 
-// Health check endpoint
+// Route pour vérifier que l'API fonctionne
 app.get('/health', (req, res) => {
-    res.status(200).json({
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-    });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    version: require('./package.json').version
+  });
 });
 
 // Monter les routes des étudiants sur /api/etudiants

@@ -11,6 +11,7 @@ const {
     deleteEtudiant,
     getEtudiantsByFiliere,
     searchEtudiants
+
 } = require('../controllers/etudiantController');
 
 // ============================================
@@ -40,6 +41,8 @@ router.route('/:id')
     .get(getEtudiantById)
     .put(updateEtudiant)
     .delete(deleteEtudiant);
+
+//
 
 // Exporter le routeur
 module.exports = router;

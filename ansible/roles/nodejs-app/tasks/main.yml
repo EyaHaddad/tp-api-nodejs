@@ -1,0 +1,46 @@
+---
+- name: 📥 Récupérer le code depuis GitHub
+  git:
+    repo: "{{ github_repo }}"
+    dest: "{{ app_dir }}"
+    version: "{{ github_branch }}"
+    force: yes
+  register: git_result
+  when: github_repo != ""
+
+- name: ⚙️ Générer le fichier .env
+  template:
+    src: env.j2
+    dest: "{{ app_dir }}/.env"
+    mode: '0600'
+  notify: Redémarrer PM2
+
+- name: 📦 Installer les dépendances
+  npm:
+    path: "{{ app_dir }}"
+    production: yes
+    state: present
+
+- name: 🚀 Démarrer l'application
+  command: pm2 startOrReload ecosystem.config.js --env production
+  args:
+    chdir: "{{ app_dir }}"
+
+- name: 💾 Sauvegarder la config PM2
+  command: pm2 save
+  changed_when: false
+
+- name: ⏳ Attendre le démarrage
+  pause:
+    seconds: 3
+
+- name: 🏥 Vérifier que l'API répond
+  uri:
+    url: "http://localhost:{{ app_port }}/"
+    method: GET
+    status_code: [200, 301, 302, 404]
+    timeout: 10
+  retries: 5
+  delay: 3
+  register: health_check
+  until: health_check.status != -1

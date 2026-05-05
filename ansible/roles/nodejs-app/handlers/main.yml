@@ -1,0 +1,5 @@
+---
+- name: Redémarrer PM2
+  command: pm2 reload ecosystem.config.js --env production
+  args:
+    chdir: "{{ app_dir }}"

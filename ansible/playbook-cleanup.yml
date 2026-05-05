@@ -1,0 +1,26 @@
+---
+- name: 🧹 Nettoyage du serveur
+  hosts: webservers
+  become: no
+
+  vars:
+    app_dir: "/home/ec2-user/app"
+
+  tasks:
+    - name: 🛑 Arrêter l'application
+      command: pm2 delete all
+      ignore_errors: yes
+
+    - name: 💾 Vider la liste PM2
+      command: pm2 save --force
+      ignore_errors: yes
+
+    - name: 🗑️ Supprimer le code
+      file:
+        path: "{{ app_dir }}"
+        state: absent
+      become: yes
+
+    - name: ✅ Nettoyage terminé
+      debug:
+        msg: "Le serveur a été nettoyé."

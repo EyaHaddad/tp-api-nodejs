@@ -1,0 +1,11 @@
+---
+- name: 🚀 Déploiement via le rôle nodejs-app
+  hosts: webservers
+  become: no
+
+  roles:
+    - role: nodejs-app
+      vars:
+        github_repo: "https://github.com/VOTRE_USERNAME/tp-api-nodejs.git"
+        github_branch: "main"
+        app_port: 3000

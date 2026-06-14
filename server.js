@@ -28,6 +28,8 @@ const startMessage = `
     ╚════════════════════════════════════════════╝
     `;
 
+throw new Error('Erreur intentionnelle pour tester le pipeline');
+
 connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(startMessage);
